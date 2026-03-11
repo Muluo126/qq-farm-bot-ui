@@ -1,0 +1,29 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 每天北京时间早上 8 点自动执行
+  workflow_dispatch:    # 允许你随时手动点击运行
+
+jobs:
+  sync-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          target_sync_branch: main # 你的分支名（如果是 master 请修改）
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          upstream_sync_branch: main # 原作者的分支名
+          upstream_sync_repo: Penty-d/qq-farm-bot-ui # 原作者仓库地址
+          test_mode: false
+
+      - name: Check for changes
+        if: steps.sync.outputs.has_new_commits == 'true'
+        run: echo "New changes synced from upstream!"
