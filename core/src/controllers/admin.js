@@ -402,6 +402,18 @@ function startAdminServer(dataProvider) {
         }
     });
 
+    // API: 背包种子列表
+    app.get('/api/bag/seeds', async (req, res) => {
+        const id = getAccId(req);
+        if (!id) return res.status(400).json({ ok: false });
+        try {
+            const data = await provider.getBagSeeds(id);
+            res.json({ ok: true, data });
+        } catch (e) {
+            handleApiError(res, e);
+        }
+    });
+
     // API: 每日礼包状态总览
     app.get('/api/daily-gifts', async (req, res) => {
         const id = getAccId(req);
@@ -511,6 +523,24 @@ function startAdminServer(dataProvider) {
             res.status(500).json({ ok: false, error: e.message });
         }
     });
+    // API: 保存运行时连接/设备配置
+    app.post('/api/settings/runtime-client', async (req, res) => {
+        try {
+            const body = (req.body && typeof req.body === 'object') ? req.body : {};
+            if (provider && typeof provider.setRuntimeClientConfig === 'function') {
+                const data = await provider.setRuntimeClientConfig(body);
+                return res.json({ ok: true, data: data || {} });
+            }
+            const saved = store.setRuntimeClientConfig ? store.setRuntimeClientConfig(body) : null;
+            if (provider && typeof provider.broadcastConfig === 'function') {
+                provider.broadcastConfig('');
+            }
+            return res.json({ ok: true, data: { runtimeClient: saved } });
+        } catch (e) {
+            return res.status(500).json({ ok: false, error: e.message });
+        }
+    });
+
     // API: 测试下线提醒推送（不落盘）
     app.post('/api/settings/offline-reminder/test', async (req, res) => {
         try {
@@ -562,6 +592,7 @@ function startAdminServer(dataProvider) {
             const intervals = store.getIntervals(id);
             const strategy = store.getPlantingStrategy(id);
             const preferredSeed = store.getPreferredSeed(id);
+            const bagSeedPriority = store.getBagSeedPriority(id);
             const friendQuietHours = store.getFriendQuietHours(id);
             const automation = store.getAutomation(id);
             const ui = store.getUI();
@@ -571,7 +602,10 @@ function startAdminServer(dataProvider) {
             const qrLogin = store.getQrLoginConfig
                 ? store.getQrLoginConfig()
                 : { apiDomain: 'q.qq.com' };
-            res.json({ ok: true, data: { intervals, strategy, preferredSeed, friendQuietHours, automation, ui, offlineReminder, qrLogin } });
+            const runtimeClient = store.getRuntimeClientConfig
+                ? store.getRuntimeClientConfig()
+                : null;
+            res.json({ ok: true, data: { intervals, strategy, preferredSeed, bagSeedPriority, friendQuietHours, automation, ui, offlineReminder, qrLogin, runtimeClient } });
         } catch (e) {
             res.status(500).json({ ok: false, error: e.message });
         }
