@@ -1,6 +1,6 @@
 services:
   qq-farm-bot-ui:
-    image: ${DOCKERHUB_USERNAME:-your-username}/qq-farm-bot-ui:latest
+    image: ${DOCKERHUB_USERNAME}/qq-farm-bot-ui:latest
     container_name: qq-farm-bot-ui
     restart: unless-stopped
     environment:
@@ -10,9 +10,14 @@ services:
       - "${PORT:-3000}:3000"
     volumes:
       - ./data:/app/core/data
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+
+  # 新增 Watchtower 服务
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --cleanup --interval 300
+    # --cleanup: 更新后自动删除旧镜像，防止硬盘爆满
+    # --interval 300: 每 300 秒（5 分钟）检查一次是否有新镜像
