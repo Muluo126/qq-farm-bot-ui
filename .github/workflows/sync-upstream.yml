@@ -2,8 +2,11 @@ name: Sync Upstream
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 每天北京时间早上 8 点自动执行
-  workflow_dispatch:    # 允许你随时手动点击运行
+    # 23:00 UTC 是北京时间次日 07:00
+    - cron: '0 23 * * *'
+    # 10:00 UTC 是北京时间当天 18:00
+    - cron: '0 10 * * *'
+  workflow_dispatch: # 保持手动触发功能
 
 jobs:
   sync-upstream:
@@ -26,4 +29,5 @@ jobs:
 
       - name: Check for changes
         if: steps.sync.outputs.has_new_commits == 'true'
+
         run: echo "New changes synced from upstream!"
